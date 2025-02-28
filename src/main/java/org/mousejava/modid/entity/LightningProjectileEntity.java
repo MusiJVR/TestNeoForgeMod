@@ -5,15 +5,13 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.*;
-import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.network.NetworkHooks;
 import org.mousejava.modid.init.EntitiesMI;
 
-public class LightningProjectileEntity extends Projectile {
+public class LightningProjectileEntity extends ThrowableProjectile {
     public LightningProjectileEntity(EntityType<? extends LightningProjectileEntity> type, Level level) {
         super(type, level);
     }
@@ -21,10 +19,10 @@ public class LightningProjectileEntity extends Projectile {
     public LightningProjectileEntity(Level level, LivingEntity shooter) {
         super(EntitiesMI.LIGHTNING_PROJECTILE, level);
         this.setOwner(shooter);
+        this.setNoGravity(true);
 
         Vec3 look = shooter.getLookAngle();
         this.setPos(shooter.getX() + look.x, shooter.getEyeY(), shooter.getZ() + look.z);
-
         this.setDeltaMovement(look.scale(1.5));
     }
 
@@ -41,13 +39,7 @@ public class LightningProjectileEntity extends Projectile {
         }
 
         Vec3 deltaMovement = this.getDeltaMovement();
-        this.move(MoverType.SELF, deltaMovement);
-
-        HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
-
-        if (hitResult.getType() != HitResult.Type.MISS && !ForgeEventFactory.onProjectileImpact(this, hitResult)) {
-            this.onHit(hitResult);
-        }
+        this.setDeltaMovement(deltaMovement.scale(1.0));
 
         if (this.tickCount > 200 || this.isInWater()) {
             this.discard();
@@ -60,33 +52,18 @@ public class LightningProjectileEntity extends Projectile {
     }
 
     @Override
-    protected void onHitBlock(BlockHitResult result) {
-        super.onHitBlock(result);
+    protected void onHit(HitResult hitResult) {
         if (!this.level().isClientSide) {
             Level level = this.level();
 
             LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(level);
             if (lightningBolt != null) {
-                lightningBolt.moveTo(position());
+                lightningBolt.moveTo(hitResult.getLocation());
                 level.addFreshEntity(lightningBolt);
             }
 
-            this.discard();
-        }
-    }
-
-    @Override
-    protected void onHitEntity(EntityHitResult result) {
-        super.onHitEntity(result);
-        if (!this.level().isClientSide) {
-            Level level = this.level();
-            Entity entity = result.getEntity();
-            entity.hurt(level.damageSources().lightningBolt(), 5.0F);
-
-            LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(level);
-            if (lightningBolt != null) {
-                lightningBolt.moveTo(entity.position());
-                level.addFreshEntity(lightningBolt);
+            if (hitResult instanceof EntityHitResult entityHit) {
+                entityHit.getEntity().hurt(level.damageSources().lightningBolt(), 5.0F);
             }
 
             this.discard();
