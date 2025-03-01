@@ -1,2 +1,4 @@
 creative_tab.modid.root=Mod Name
 item.modid.wand_of_lightning=Жезл Молний
+block.modid.lightning_generator=Генератор Молний
+tooltip.lightning_generator.energy=Энергия: %s

@@ -1,2 +1,4 @@
 creative_tab.modid.root=Mod Name
 item.modid.wand_of_lightning=Wand of Lightning
+block.modid.lightning_generator=Lightning Generator
+tooltip.lightning_generator.energy=Energy: %s
