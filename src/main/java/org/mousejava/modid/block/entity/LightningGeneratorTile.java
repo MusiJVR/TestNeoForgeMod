@@ -69,9 +69,7 @@ public class LightningGeneratorTile extends TileSyncableTickable implements IEne
     private void generateEnergyFromLightning(Entity lightning) {
         double distance = this.worldPosition.distSqr(new Vec3i((int) lightning.getX(), (int) lightning.getY(), (int) lightning.getZ()));
         int energyGenerated = (int) (maxEnergy * (1 - Math.min(distance / 64.0, 1)));
-        currentEnergy = Math.min(currentEnergy + energyGenerated, maxEnergy);
-        energy.setInt(currentEnergy);
-        sync();
+        energy.setInt(Math.min(currentEnergy + energyGenerated, maxEnergy));
     }
 
     private void spreadEnergyToNeighbors() {
@@ -85,7 +83,6 @@ public class LightningGeneratorTile extends TileSyncableTickable implements IEne
             energyCap.ifPresent(storage -> {
                 int energyReceived = storage.receiveEnergy(Math.min(currentEnergy, maxTransfer), false);
                 extractEnergy(energyReceived, false);
-                sync();
             });
         }
     }
@@ -96,7 +93,7 @@ public class LightningGeneratorTile extends TileSyncableTickable implements IEne
 
         int energyReceived = Math.min(maxEnergy - currentEnergy, Math.min(energy, maxTransfer));
         if (!simulate) {
-            currentEnergy += energyReceived;
+            this.energy.setInt(currentEnergy + energyReceived);
         }
         return energyReceived;
     }
@@ -107,7 +104,7 @@ public class LightningGeneratorTile extends TileSyncableTickable implements IEne
 
         int energyExtracted = Math.min(currentEnergy, Math.min(energy, maxTransfer));
         if (!simulate) {
-            currentEnergy -= energyExtracted;
+            this.energy.setInt(currentEnergy - energyExtracted);
         }
         return energyExtracted;
     }
@@ -146,6 +143,6 @@ public class LightningGeneratorTile extends TileSyncableTickable implements IEne
 
     @Override
     public void addInformation(ITooltip tip) {
-        tip.addText(Component.translatable("tooltip.lightning_generator.energy", energy.getInt()));
+        tip.addText(Component.translatable("tooltip.lightning_generator.energy", currentEnergy));
     }
 }
